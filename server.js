@@ -24,6 +24,26 @@ var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
     }
 });
 
+/*
+States:
+state_abbreviation (TEXT) - two character abbreviation for a state
+state_name (TEXT) - full name of the state
+Consumption:
+year (INTEGER) - year for consumption measurements in YYYY format
+state_abbreviation (TEXT) - two character abbreviation for a state
+coal (INTEGER) - amount of energy produced by coal (in billion Btu)
+natural_gas (INTEGER) - amount of energy produced by natural gas (in billion Btu)
+nuclear (INTEGER) - amount of energy produced by nuclear energy (in billion Btu)
+petroleum (INTEGER) - amount of energy produced by petroleum (in billion Btu)
+renewable (INTEGER) - amount of energy produced by renewable energy (in billion Btu)
+*/
+
+function TestSql() {
+	db.all("Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable From Consumption where year = '2017'", (err, rows) => {
+		//console.log(rows);
+	});
+}
+
 app.use(express.static(public_dir));
 
 
@@ -32,7 +52,33 @@ app.get('/', (req, res) => {
     ReadFile(path.join(template_dir, 'index.html')).then((template) => {
         let response = template;
         // modify `response` here
-        WriteHtml(res, response);
+		db.all(
+		"Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable From Consumption where year = '2017'", (err, rows) => {
+			//console.log(rows[0].coal);
+			response = response.toString().replace(/!coal!/g, rows[0].coal);
+			response = response.toString().replace(/!natural_gas!/g, rows[0].natural_gas);
+			response = response.toString().replace(/!nuclear!/g, rows[0].nuclear);
+			response = response.toString().replace(/!petroleum!/g, rows[0].petroleum);
+			response = response.toString().replace(/!renewable!/g, rows[0].renewable);
+			var table = "";
+			//console.log(response);
+			db.each("Select [state_abbreviation], [coal], [natural_gas], [nuclear], [petroleum], [renewable] from Consumption Where [year] = '2017' Order by [state_abbreviation]", (err, row) => {
+				//console.log(row);
+				table += "<TR>";
+				for(var i in row) {
+					table += "<TD>" + row[i] + "</TD>";
+				}
+				table += "</TR>";
+			}, (err, num) => {
+				if(err) {
+					console.log("Error in db.each");
+				}
+				console.log("Table has " + num + " rows");
+				response = response.toString().replace(/!tbody!/g, table);
+				//console.log(response);
+				WriteHtml(res, response);
+			});
+		});
     }).catch((err) => {
         Write404Error(res);
     });
@@ -41,9 +87,37 @@ app.get('/', (req, res) => {
 // GET request handler for '/year/*'
 app.get('/year/:selected_year', (req, res) => {
     ReadFile(path.join(template_dir, 'year.html')).then((template) => {
+		var year = req.params.selected_year;
         let response = template;
         // modify `response` here
-        WriteHtml(res, response);
+		db.all(
+		"Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable From Consumption where year = '" + year + "'", (err, rows) => {
+			//console.log(rows[0].coal);
+			response = response.toString().replace(/!year!/g, year);
+			response = response.toString().replace(/!coal!/g, rows[0].coal);
+			response = response.toString().replace(/!natural_gas!/g, rows[0].natural_gas);
+			response = response.toString().replace(/!nuclear!/g, rows[0].nuclear);
+			response = response.toString().replace(/!petroleum!/g, rows[0].petroleum);
+			response = response.toString().replace(/!renewable!/g, rows[0].renewable);
+			var table = "";
+			//console.log(response);
+			db.each("Select [state_abbreviation], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [year] = '" + year + "' Order by [state_abbreviation]", (err, row) => {
+				//console.log(row);
+				table += "<TR>";
+				for(var i in row) {
+					table += "<TD>" + row[i] + "</TD>";
+				}
+				table += "</TR>";
+			}, (err, num) => {
+				if(err) {
+					console.log("Error in db.each");
+				}
+				console.log("Table has " + num + " rows");
+				response = response.toString().replace(/!tbody!/g, table);
+				console.log(response);
+				WriteHtml(res, response);
+			});
+		});
     }).catch((err) => {
         Write404Error(res);
     });
@@ -96,13 +170,6 @@ function WriteHtml(res, html) {
     res.end();
 }
 
-/*
-function testSQL() {
-	db.all("Select * from states where state_abbreviation = ?", ['MN'], (err, rows) => {
-		console.log(rows); 
-	}); 
-}
-testSQL(); 
-*/
 
 var server = app.listen(port);
+TestSql();
