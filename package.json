@@ -3,23 +3,23 @@
     "version": "0.0.0",
     "description": "Dynamic Web Server using Node JS",
     "author": {
-        "name": "",
-        "email": ""
+        "name": "Sheila Pietila",
+        "email": "piet9564@stthomas.edu"
     },
     "contributors": [
         {
-            "name": "",
-            "email": ""
+            "name": "Sheila Pietila",
+            "email": "piet9564@stthomas.edu"
         },
         {
-            "name": "",
-            "email": ""
+            "name": "George McGivern",
+            "email": "mcgi7746@stthomas.edu"
         }
     ],
     "main": "server.js",
     "repository": {
         "type": "git",
-        "url": ""
+        "url": "https://github.com/TechnoArtist/Project2-DynamicServer.git"
     },
     "dependencies": {
         "express": "^4.17.1",
