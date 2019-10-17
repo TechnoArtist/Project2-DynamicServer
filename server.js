@@ -99,6 +99,10 @@ app.get('/year/:selected_year', (req, res) => {
 			response = response.toString().replace(/!nuclear!/g, rows[0].nuclear);
 			response = response.toString().replace(/!petroleum!/g, rows[0].petroleum);
 			response = response.toString().replace(/!renewable!/g, rows[0].renewable);
+			if(year === "1960") response = response.toString().replace(/!prev_year_link!/g, "/year/1960");
+			else response = response.toString().replace(/!prev_year_link!/g, "/year/"+(parseInt(year)-1));
+			if(year === "2016") response = response.toString().replace(/!next_year_link!/g, "/year/2016");
+			else response = response.toString().replace(/!next_year_link!/g, "/year/"+(parseInt(year)+1));
 			var table = "";
 			//console.log(response);
 			db.each("Select [state_abbreviation], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [year] = '" + year + "' Order by [state_abbreviation]", (err, row) => {
