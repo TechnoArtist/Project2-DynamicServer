@@ -6,7 +6,7 @@ anychart.onDocumentReady(() => {
         {x: 'Petroleum', value: window.petroleum_count || 1},
         {x: 'Renewable', value: window.renewable_count || 1}
     ];
-
+    //console.log("/n /n /n ##################################" + data);
     var chart = anychart.pie();
 
     // set the chart title

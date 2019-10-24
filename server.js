@@ -39,9 +39,23 @@ renewable (INTEGER) - amount of energy produced by renewable energy (in billion 
 */
 
 function TestSql() {
-	db.all("Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable From Consumption where year = '2017'", (err, rows) => {
-		//console.log(rows);
+	/*var year_counts = {};
+	db.each("select year from consumption order by year", (err, row) => {
+		year_counts.year = row[0];
+		db.each("select state_abbreviation from consumption order by state_abbreviation", (err, rows) => {
+			year_counts.year.state_abbreviation = rows[0];
+		})
 	});
+	console.log(year_counts);
+	var selected_energy_type = "coal";
+        db.each("Select year, state_abbreviation, " + selected_energy_type + " from Consumption order by year", (err,row) => {
+        	if(err) {console.log("SQL error");}
+        	let year = row[0];
+        	let state_abbreviation = row[1];
+        	let amount = row[3];
+        	year_counts[year[state_abbreviation]] = amount;
+        });
+        console.log(year_counts);*/
 }
 
 app.use(express.static(public_dir));
@@ -131,9 +145,47 @@ app.get('/year/:selected_year', (req, res) => {
 app.get('/state/:selected_state', (req, res) => {
     ReadFile(path.join(template_dir, 'state.html')).then((template) => {
         let response = template;
+        console.log(req.params.selected_state);
         // modify `response` here
-        WriteHtml(res, response);
+        var coal_counts = new Array(58);
+        var natural_gas_counts = new Array(58);
+        var nuclear_counts = new Array(58);
+        var petroleum_counts = new Array(58);
+        var renewable_counts = new Array(58);
+        var i = 0;
+        db.each("select year, coal, natural_gas, nuclear, petroleum, renewable from consumption where state_abbreviation = '"+ req.params.selected_state+ "'order by year", (err, rows) => {
+                if(err){console.log("SQL err");}
+                else {
+                    //console.log(rows);
+            		coal_counts[i] = rows.coal;
+            		natural_gas_counts[i] = rows.natural_gas;
+            		nuclear_counts[i] = rows.nuclear;
+            		petroleum_counts[i] = rows.petroleum;
+            		renewable_counts[i] = rows.renewable;
+            		i++;
+                }
+        }, (err,num) => {
+            response = response.toString().replace(/ !state! /g,req.params.selected_state);
+            response = response.toString().replace(/ !coal! /g,coal_counts);
+            response = response.toString().replace(/ !natural_gas! /g,natural_gas_counts);
+            response = response.toString().replace(/ !nuclear! /g,nuclear_counts);
+            response = response.toString().replace(/ !petroleum! /g,petroleum_counts);
+            response = response.toString().replace(/ !renewable! /g, renewable_counts);
+            var table = "";
+            db.each("Select [year], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [state_abbreviation] = '" + req.params.selected_state + "' Order by [year]", (err, row) => {
+                table += "<TR>";
+                for(var i in row) {
+                    table += "<TD>" + row[i] + "</TD>";
+                }
+                table += "</TR>";
+            }, (err, num) => {
+                response = response.toString().replace(/!table!/g, table);
+                console.log("res: " + response);
+                WriteHtml(res, response);
+            })
+        });
     }).catch((err) => {
+        console.log(err);
         Write404Error(res);
     });
 });
@@ -143,7 +195,51 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
     ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
         let response = template;
         // modify `response` here
-        WriteHtml(res, response);
+        var year_counts = {};
+        var state_counts = {};
+        var amount_counts = [];
+        var total_counts = {};
+        console.log(req.params.selected_energy_type);
+        db.each("Select year, state_abbreviation, " + req.params.selected_energy_type + " as amount from Consumption order by year, state_abbreviation", (err,row) => {
+        	if(err) {console.log("SQL error");}
+            console.log(row);
+        	let year = row.year;
+        	let state_abbreviation = row.state_abbreviation;
+        	let amount = row.amount;
+            year_counts[year] = amount;
+            state_counts[state_abbreviation] = year_counts;
+        },
+        (err, num) => {
+            //console.log(year_counts);
+            //console.log(state_counts);
+            for(var i in state_counts) {
+                state_counts[i] = Object.values(state_counts[i]);
+            }
+            //console.log(Object.values(year_counts));
+            response = response.toString().replace(/ !type! /g,req.params.selected_energy_type);
+            response = response.toString().replace(/!counts!/g,JSON.stringify(state_counts));
+            var table = "";
+            /*db.each("SELECT year, state_abbreviation, "+req.params.selected_energy_type+" from Consumption, order by year, state_abbreviation", (err,row) => {
+                let year = row.year;
+                let state_abbreviation = row.state_abbreviation;
+                let amount = row.amount;
+                state_counts[state_abbreviation] = amount;
+                year_counts[year] = state_counts;
+            }, (err,num) => {
+                console.log(year_counts);
+                for(var i in year_counts) {
+                    table += "<TR>";
+                    var state_counts = year_counts[i];
+                    for(var j in state_counts) {
+                        //table += "<TD> +" state_counts[j] + " </TD>";
+                    }
+                    table += "</TD>";
+                }
+            });
+            response = response.toString().replace(/!table!/g, table);*/
+            console.log(response);
+            WriteHtml(res, response);
+        });
     }).catch((err) => {
         Write404Error(res);
     });
@@ -153,9 +249,11 @@ function ReadFile(filename) {
     return new Promise((resolve, reject) => {
         fs.readFile(filename, (err, data) => {
             if (err) {
+            	console.log("Here");
                 reject(err);
             }
             else {
+            	console.log("There");
                 resolve(data.toString());
             }
         });
@@ -176,4 +274,4 @@ function WriteHtml(res, html) {
 
 
 var server = app.listen(port);
-TestSql();
+//TestSql();
