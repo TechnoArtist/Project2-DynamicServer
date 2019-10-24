@@ -200,22 +200,28 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
         var amount_counts = [];
         var total_counts = {};
         console.log(req.params.selected_energy_type);
-        db.each("Select year, state_abbreviation, " + req.params.selected_energy_type + " as amount from Consumption order by year, state_abbreviation", (err,row) => {
+        db.all("Select state_abbreviation, year, [" + req.params.selected_energy_type + "] as amount from Consumption order by state_abbreviation, year", (err,row) => {
         	if(err) {console.log("SQL error");}
             console.log(row);
-        	let year = row.year;
-        	let state_abbreviation = row.state_abbreviation;
-        	let amount = row.amount;
-            year_counts[year] = amount;
-            state_counts[state_abbreviation] = year_counts;
-        },
-        (err, num) => {
-            //console.log(year_counts);
+            for(var i=0; i<row.length; i++) {
+                let state_abbreviation = row[i].state_abbreviation;
+                state_counts[state_abbreviation] = {};
+            }
+            for(var i=0; i<row.length; i++)
+            {
+                let year = row[i].year;
+                let state_abbreviation = row[i].state_abbreviation;
+                let amount = row[i].amount;
+                state_counts[state_abbreviation][year] = amount;
+            }
             //console.log(state_counts);
-            for(var i in state_counts) {
+            //console.log(year_counts);
+            console.log(state_counts);
+            for(let i in state_counts) {
                 state_counts[i] = Object.values(state_counts[i]);
             }
             //console.log(Object.values(year_counts));
+            //console.log(state_counts);
             response = response.toString().replace(/ !type! /g,req.params.selected_energy_type);
             response = response.toString().replace(/!counts!/g,JSON.stringify(state_counts));
             var table = "";
