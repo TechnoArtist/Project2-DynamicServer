@@ -237,26 +237,37 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
             response = response.toString().replace(/ !type! /g,req.params.selected_energy_type);
             response = response.toString().replace(/!counts!/g,JSON.stringify(state_counts));
             var table = "";
-            /*db.each("SELECT year, state_abbreviation, "+req.params.selected_energy_type+" from Consumption, order by year, state_abbreviation", (err,row) => {
-                let year = row.year;
-                let state_abbreviation = row.state_abbreviation;
-                let amount = row.amount;
-                state_counts[state_abbreviation] = amount;
-                year_counts[year] = state_counts;
-            }, (err,num) => {
-                console.log(year_counts);
+            db.all("SELECT year, state_abbreviation, ["+req.params.selected_energy_type+"] as amount from Consumption order by year, state_abbreviation", (err,row) => {
+                //console.log(row);
+				var year_counts = {};
+				for(var i=0; i<row.length; i++) {
+					let year = row[i].year;
+					year_counts[year] = {};
+				}
+				//console.log(year_counts);
+				for(var i=0; i<row.length; i++) {
+					let year = row[i].year;
+					let state_abbreviation = row[i].state_abbreviation;
+					let amount = row[i].amount;
+					year_counts[year][state_abbreviation] = amount;
+				}
+				console.log(year_counts);
                 for(var i in year_counts) {
                     table += "<TR>";
-                    var state_counts = year_counts[i];
+					table += "<TD>" + i + "</TD>";
+					let state_counts = year_counts[i];
+					let total = 0;
                     for(var j in state_counts) {
-                        //table += "<TD> +" state_counts[j] + " </TD>";
+                        table += "<TD> " + state_counts[j] + " </TD>";
+						total += state_counts[j];
                     }
+					table += "<TD>" + total + "</TD>";
                     table += "</TD>";
                 }
+				response = response.toString().replace(/!table!/g, table);
+				console.log(response);
+				WriteHtml(res, response);
             });
-            response = response.toString().replace(/!table!/g, table);*/
-            console.log(response);
-            WriteHtml(res, response);
         });
     }).catch((err) => {
         Write404Error(res);
