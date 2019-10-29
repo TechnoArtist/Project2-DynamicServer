@@ -171,6 +171,18 @@ app.get('/state/:selected_state', (req, res) => {
             response = response.toString().replace(/ !nuclear! /g,nuclear_counts);
             response = response.toString().replace(/ !petroleum! /g,petroleum_counts);
             response = response.toString().replace(/ !renewable! /g, renewable_counts);
+			//TODO replace state_name
+			//response = response.toString().replace(/!state_name!/g, /*full name of the current state*/); 
+			//TODO replace images
+			//response = response.toString().replace(/noimage.jpg/g, /*full name of the current state*/+".png"); 
+			//response = response.toString().replace(/No Image/g, "outline of the state of "+/*full name of the current state*/);
+			/* 
+			//TODO get the abbreviations from the table, instead of just incrementing an integer
+			if(selected_state === "1960") response = response.toString().replace(/!prev_state_link!/g, "/selected_state/AK");
+			else response = response.toString().replace(/!prev_state_link!/g, "/state/"+(selected_state-1));
+			if(selected_state === "2016") response = response.toString().replace(/!next_state_link!/g, "/selected_state/WY");
+			else response = response.toString().replace(/!next_state_link!/g, "/state/"+(selected_state+1));
+			*/
             var table = "";
             db.each("Select [year], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [state_abbreviation] = '" + req.params.selected_state + "' Order by [year]", (err, row) => {
                 table += "<TR>";
