@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    <title>US Energy Consumption</title> <!-- change title to include year (e.g. 1999 US Energy Consumption) -->
+    <title>!state! Energy Consumption</title> <!-- change title to include year (e.g. 1999 US Energy Consumption) -->
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-core.min.js"></script>
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-cartesian.min.js"></script>
@@ -22,7 +22,7 @@
 <body onload="Init()">
     <div id="wrapper">
         <div id="content">
-            <a href="/"><h1>US Energy Consumption</h1></a>
+            <a href="/"><h1>!state! Energy Consumption</h1></a>
             
             <div class="spacer2"></div>
             
@@ -45,15 +45,15 @@
 
             <div>
                 <div class="left">
-                    <h2>!state_name! Yearly Snapshot</h2> <!-- change header to include state (e.g. Minnesota Yearly Snaphot) -->
+                    <h2>!state! Yearly Snapshot</h2> <!-- change header to include state (e.g. Minnesota Yearly Snaphot) -->
                 </div>
                 <div class="right">
-                    <a class="prev_next" href="">!prev_state_link!</a> <!-- change XX to prev state, link to WY if state is AK -->
-                    <a class="prev_next" href="">!next_state_link!</a> <!-- change XX to next state, link to AK if state is WY -->
+                    <a class="prev_next" href="!prev_state_link!">!prev_state!</a> <!-- change XX to prev state, link to WY if state is AK -->
+                    <a class="prev_next" href="!next_state_link!">!next_state!</a> <!-- change XX to next state, link to AK if state is WY -->
                 </div>
                 <div class="spacer1"></div>
                 <div class="left">
-                    <img src="/images/noimage.jpg" alt="No Image" width="250" height="auto" /> <!-- change src and alt for state image -->
+                    <img src="/images/!state!.png" alt="!state!" width="250" height="auto" /> <!-- change src and alt for state image -->
                 </div>
                 <div class="right">
                     <div id="snapshot"></div>

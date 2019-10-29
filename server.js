@@ -14,6 +14,12 @@ var db_filename = path.join(__dirname, 'db', 'usenergy.sqlite3');
 var app = express();
 var port = 8000;
 
+var state_full = {};
+var state_order = {};
+var ordered_states = Array(51);
+
+
+
 // open usenergy.sqlite3 database
 var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
@@ -23,6 +29,19 @@ var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
         console.log('Now connected to ' + db_filename);
     }
 });
+
+db.all("select state_abbreviation, state_name from States order by state_abbreviation", (err, rows) => {
+	for(var i in rows) {
+		let state_abbreviation = rows[i].state_abbreviation;
+		let state_name = rows[i].state_name;
+		state_full[state_abbreviation] = state_name;
+		ordered_states[i] = state_abbreviation;
+		state_order[state_abbreviation] = i;
+	}
+});
+
+console.log(state_order);
+console.log(ordered_states);
 
 /*
 States:
@@ -153,6 +172,22 @@ app.get('/state/:selected_state', (req, res) => {
         var petroleum_counts = new Array(58);
         var renewable_counts = new Array(58);
         var i = 0;
+		var state = req.params.selected_state;
+		var nextstate;
+		var prevstate;
+		if(state_order[req.params.selected_state] = "50") {
+			nextstate = ordered_states[0];
+			prevstate = ordered_states[50];
+		} else {
+			if(state_order[req.params.selected_state] = "0") {
+				nextstate = ordered_states[1];
+				prevstate = ordered_states[50];
+			} else {
+				nextstate = ordered_states[parseInt(state_order[state])+1];
+				prevstate = ordered_states[parseInt(state_order[state])-1];
+				console.log("order:" +  state_order[req.params.selected_state]);
+			}
+		}
         db.each("select year, coal, natural_gas, nuclear, petroleum, renewable from consumption where state_abbreviation = '"+ req.params.selected_state+ "'order by year", (err, rows) => {
                 if(err){console.log("SQL err");}
                 else {
@@ -166,11 +201,17 @@ app.get('/state/:selected_state', (req, res) => {
                 }
         }, (err,num) => {
             response = response.toString().replace(/ !state! /g,req.params.selected_state);
+			response = response.toString().replace(/!state!/g,state_full[req.params.selected_state]);
             response = response.toString().replace(/ !coal! /g,coal_counts);
             response = response.toString().replace(/ !natural_gas! /g,natural_gas_counts);
             response = response.toString().replace(/ !nuclear! /g,nuclear_counts);
             response = response.toString().replace(/ !petroleum! /g,petroleum_counts);
             response = response.toString().replace(/ !renewable! /g, renewable_counts);
+			response = response.toString().replace(/ !renewable! /g, renewable_counts);
+			response = response.toString().replace(/!next_state!/g, nextstate);
+			response = response.toString().replace(/!prev_state!/g, prevstate);
+			response = response.toString().replace(/!next_state_link!/g, "/state/" + nextstate);
+			response = response.toString().replace(/!prev_state_link!/g, "/state/" + prevstate);
 			//TODO replace state_name
 			//response = response.toString().replace(/!state_name!/g, /*full name of the current state*/); 
 			//TODO replace images
@@ -278,11 +319,11 @@ function ReadFile(filename) {
     return new Promise((resolve, reject) => {
         fs.readFile(filename, (err, data) => {
             if (err) {
-            	console.log("Here");
+            	//console.log("Here");
                 reject(err);
             }
             else {
-            	console.log("There");
+            	//console.log("There");
                 resolve(data.toString());
             }
         });
