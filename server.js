@@ -38,8 +38,11 @@ db.all("select state_abbreviation, state_name from States order by state_abbrevi
 		ordered_states[i] = state_abbreviation;
 		state_order[state_abbreviation] = i;
 	}
+	state_full["MA"]="Massachusetts";
+	console.log(state_full);
 });
 
+console.log(state_full);
 console.log(state_order);
 console.log(ordered_states);
 
@@ -175,11 +178,12 @@ app.get('/state/:selected_state', (req, res) => {
 		var state = req.params.selected_state;
 		var nextstate;
 		var prevstate;
-		if(state_order[req.params.selected_state] = "50") {
+		console.log("Order: " + state_order[req.params.selected_state]);
+		if(state_order[req.params.selected_state] == "50") {
 			nextstate = ordered_states[0];
-			prevstate = ordered_states[50];
+			prevstate = ordered_states[49];
 		} else {
-			if(state_order[req.params.selected_state] = "0") {
+			if(state_order[req.params.selected_state] == "0") {
 				nextstate = ordered_states[1];
 				prevstate = ordered_states[50];
 			} else {
@@ -202,6 +206,7 @@ app.get('/state/:selected_state', (req, res) => {
         }, (err,num) => {
             response = response.toString().replace(/ !state! /g,req.params.selected_state);
 			response = response.toString().replace(/!state!/g,state_full[req.params.selected_state]);
+			response = response.toString().replace(/!state_abbreviation!/g,req.params.selected_state);
             response = response.toString().replace(/ !coal! /g,coal_counts);
             response = response.toString().replace(/ !natural_gas! /g,natural_gas_counts);
             response = response.toString().replace(/ !nuclear! /g,nuclear_counts);
