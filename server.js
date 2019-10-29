@@ -18,6 +18,14 @@ var state_full = {};
 var state_order = {};
 var ordered_states = Array(51);
 
+var energy_order = {};
+var ordered_energy = Array(5);
+var name_nice = {};
+
+energy_order = {"coal": "0", "natural_gas": "1", "nuclear": "2", "petroleum": "3", "renewable": "4"};
+ordered_energy = ["coal", "natural_gas", "nuclear", "petroleum", "renewable"];
+name_nice = {"coal": "Coal", "natural_gas": "Natural Gas", "nuclear": "Nuclear", "petroleum": "Petroleum", "renewable": "Renewable"};
+
 
 
 // open usenergy.sqlite3 database
@@ -257,6 +265,20 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
         var state_counts = {};
         var amount_counts = [];
         var total_counts = {};
+		var nextenergy;
+		var prevenergy;
+		if(energy_order[req.params.selected_energy_type] == "0") {
+			nextenergy = "natural_gas";
+			prevenergy = "renewable";
+		} else {
+			if(energy_order[req.params.selected_energy_type] == "4") {
+				nextenergy = "coal";
+				prevenergy = "petroleum";
+			} else {
+				nextenergy = ordered_energy[parseInt(energy_order[req.params.selected_energy_type])+1];
+				prevenergy = ordered_energy[parseInt(energy_order[req.params.selected_energy_type])-1];
+			}
+		}
         console.log(req.params.selected_energy_type);
         db.all("Select state_abbreviation, year, [" + req.params.selected_energy_type + "] as amount from Consumption order by state_abbreviation, year", (err,row) => {
         	if(err) {console.log("SQL error");}
@@ -281,7 +303,12 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
             //console.log(Object.values(year_counts));
             //console.log(state_counts);
             response = response.toString().replace(/ !type! /g,req.params.selected_energy_type);
+			response = response.toString().replace(/!type_nice!/g,name_nice[req.params.selected_energy_type]);
             response = response.toString().replace(/!counts!/g,JSON.stringify(state_counts));
+			response = response.toString().replace(/!nextenergy!/g, nextenergy);
+			response = response.toString().replace(/!prevenergy!/g, prevenergy);
+			response = response.toString().replace(/!nextenergy_nice!/g, name_nice[nextenergy]);
+			response = response.toString().replace(/!prevenergy_nice!/g, name_nice[prevenergy]);
             var table = "";
             db.all("SELECT year, state_abbreviation, ["+req.params.selected_energy_type+"] as amount from Consumption order by year, state_abbreviation", (err,row) => {
                 //console.log(row);
