@@ -47,12 +47,7 @@ db.all("select state_abbreviation, state_name from States order by state_abbrevi
 		state_order[state_abbreviation] = i;
 	}
 	state_full["MA"]="Massachusetts";
-	console.log(state_full);
 });
-
-console.log(state_full);
-console.log(state_order);
-console.log(ordered_states);
 
 /*
 States:
@@ -98,16 +93,13 @@ app.get('/', (req, res) => {
         // modify `response` here
 		db.all(
 		"Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable From Consumption where year = '2017'", (err, rows) => {
-			//console.log(rows[0].coal);
 			response = response.toString().replace(/!coal!/g, rows[0].coal);
 			response = response.toString().replace(/!natural_gas!/g, rows[0].natural_gas);
 			response = response.toString().replace(/!nuclear!/g, rows[0].nuclear);
 			response = response.toString().replace(/!petroleum!/g, rows[0].petroleum);
 			response = response.toString().replace(/!renewable!/g, rows[0].renewable);
 			var table = "";
-			//console.log(response);
 			db.each("Select [state_abbreviation], [coal], [natural_gas], [nuclear], [petroleum], [renewable] from Consumption Where [year] = '2017' Order by [state_abbreviation]", (err, row) => {
-				//console.log(row);
 				table += "<TR>";
 				for(var i in row) {
 					table += "<TD>" + row[i] + "</TD>";
@@ -117,9 +109,7 @@ app.get('/', (req, res) => {
 				if(err) {
 					console.log("Error in db.each");
 				}
-				console.log("Table has " + num + " rows");
 				response = response.toString().replace(/!tbody!/g, table);
-				//console.log(response);
 				WriteHtml(res, response);
 			});
 		});
@@ -135,36 +125,38 @@ app.get('/year/:selected_year', (req, res) => {
         let response = template;
         // modify `response` here
 		db.all(
-		"Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable From Consumption where year = '" + year + "'", (err, rows) => {
-			//console.log(rows[0].coal);
-			response = response.toString().replace(/!year!/g, year);
-			response = response.toString().replace(/!coal!/g, rows[0].coal);
-			response = response.toString().replace(/!natural_gas!/g, rows[0].natural_gas);
-			response = response.toString().replace(/!nuclear!/g, rows[0].nuclear);
-			response = response.toString().replace(/!petroleum!/g, rows[0].petroleum);
-			response = response.toString().replace(/!renewable!/g, rows[0].renewable);
-			if(year === "1960") response = response.toString().replace(/!prev_year_link!/g, "/year/1960");
-			else response = response.toString().replace(/!prev_year_link!/g, "/year/"+(parseInt(year)-1));
-			if(year === "2016") response = response.toString().replace(/!next_year_link!/g, "/year/2016");
-			else response = response.toString().replace(/!next_year_link!/g, "/year/"+(parseInt(year)+1));
-			var table = "";
-			//console.log(response);
-			db.each("Select [state_abbreviation], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [year] = '" + year + "' Order by [state_abbreviation]", (err, row) => {
-				//console.log(row);
-				table += "<TR>";
-				for(var i in row) {
-					table += "<TD>" + row[i] + "</TD>";
-				}
-				table += "</TR>";
-			}, (err, num) => {
-				if(err) {
-					console.log("Error in db.each");
-				}
-				console.log("Table has " + num + " rows");
-				response = response.toString().replace(/!tbody!/g, table);
-				console.log(response);
-				WriteHtml(res, response);
-			});
+		"Select sum(coal) as coal, sum(natural_gas) as natural_gas, sum(nuclear) as nuclear, sum(petroleum) as petroleum, sum(renewable) as renewable, year From Consumption where year = '" + year + "'", (err, rows) => {
+			if(err) {
+				
+			}
+			else {
+				response = response.toString().replace(/!year!/g, year);
+				response = response.toString().replace(/!coal!/g, rows[0].coal);
+				response = response.toString().replace(/!natural_gas!/g, rows[0].natural_gas);
+				response = response.toString().replace(/!nuclear!/g, rows[0].nuclear);
+				response = response.toString().replace(/!petroleum!/g, rows[0].petroleum);
+				response = response.toString().replace(/!renewable!/g, rows[0].renewable);
+				if(year === "1960") response = response.toString().replace(/!prev_year_link!/g, "/year/1960");
+				else response = response.toString().replace(/!prev_year_link!/g, "/year/"+(parseInt(year)-1));
+				if(year === "2016") response = response.toString().replace(/!next_year_link!/g, "/year/2016");
+				else response = response.toString().replace(/!next_year_link!/g, "/year/"+(parseInt(year)+1));
+				var table = "";
+				db.each("Select [state_abbreviation], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [year] = '" + year + "' Order by [state_abbreviation]", (err, row) => {
+					table += "<TR>";
+					for(var i in row) {
+						table += "<TD>" + row[i] + "</TD>";
+					}
+					table += "</TR>";
+				}, (err, num) => {
+					if(err || num == 0) {
+						Write404Error(res, "Error no data for year: " + req.params.selected_year);
+					}
+					else {
+						response = response.toString().replace(/!tbody!/g, table);
+						WriteHtml(res, response);
+					}
+				});
+			}
 		});
     }).catch((err) => {
         Write404Error(res);
@@ -175,7 +167,6 @@ app.get('/year/:selected_year', (req, res) => {
 app.get('/state/:selected_state', (req, res) => {
     ReadFile(path.join(template_dir, 'state.html')).then((template) => {
         let response = template;
-        console.log(req.params.selected_state);
         // modify `response` here
         var coal_counts = new Array(58);
         var natural_gas_counts = new Array(58);
@@ -186,7 +177,6 @@ app.get('/state/:selected_state', (req, res) => {
 		var state = req.params.selected_state;
 		var nextstate;
 		var prevstate;
-		console.log("Order: " + state_order[req.params.selected_state]);
 		if(state_order[req.params.selected_state] == "50") {
 			nextstate = ordered_states[0];
 			prevstate = ordered_states[49];
@@ -197,13 +187,11 @@ app.get('/state/:selected_state', (req, res) => {
 			} else {
 				nextstate = ordered_states[parseInt(state_order[state])+1];
 				prevstate = ordered_states[parseInt(state_order[state])-1];
-				console.log("order:" +  state_order[req.params.selected_state]);
 			}
 		}
         db.each("select year, coal, natural_gas, nuclear, petroleum, renewable from consumption where state_abbreviation = '"+ req.params.selected_state+ "'order by year", (err, rows) => {
-                if(err){console.log("SQL err");}
+                if(err){}
                 else {
-                    //console.log(rows);
             		coal_counts[i] = rows.coal;
             		natural_gas_counts[i] = rows.natural_gas;
             		nuclear_counts[i] = rows.nuclear;
@@ -212,46 +200,34 @@ app.get('/state/:selected_state', (req, res) => {
             		i++;
                 }
         }, (err,num) => {
-            response = response.toString().replace(/ !state! /g,req.params.selected_state);
-			response = response.toString().replace(/!state!/g,state_full[req.params.selected_state]);
-			response = response.toString().replace(/!state_abbreviation!/g,req.params.selected_state);
-            response = response.toString().replace(/ !coal! /g,coal_counts);
-            response = response.toString().replace(/ !natural_gas! /g,natural_gas_counts);
-            response = response.toString().replace(/ !nuclear! /g,nuclear_counts);
-            response = response.toString().replace(/ !petroleum! /g,petroleum_counts);
-            response = response.toString().replace(/ !renewable! /g, renewable_counts);
-			response = response.toString().replace(/ !renewable! /g, renewable_counts);
-			response = response.toString().replace(/!next_state!/g, nextstate);
-			response = response.toString().replace(/!prev_state!/g, prevstate);
-			response = response.toString().replace(/!next_state_link!/g, "/state/" + nextstate);
-			response = response.toString().replace(/!prev_state_link!/g, "/state/" + prevstate);
-			//TODO replace state_name
-			//response = response.toString().replace(/!state_name!/g, /*full name of the current state*/); 
-			//TODO replace images
-			//response = response.toString().replace(/noimage.jpg/g, /*full name of the current state*/+".png"); 
-			//response = response.toString().replace(/No Image/g, "outline of the state of "+/*full name of the current state*/);
-			/* 
-			//TODO get the abbreviations from the table, instead of just incrementing an integer
-			if(selected_state === "1960") response = response.toString().replace(/!prev_state_link!/g, "/selected_state/AK");
-			else response = response.toString().replace(/!prev_state_link!/g, "/state/"+(selected_state-1));
-			if(selected_state === "2016") response = response.toString().replace(/!next_state_link!/g, "/selected_state/WY");
-			else response = response.toString().replace(/!next_state_link!/g, "/state/"+(selected_state+1));
-			*/
-            var table = "";
-            db.each("Select [year], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [state_abbreviation] = '" + req.params.selected_state + "' Order by [year]", (err, row) => {
-                table += "<TR>";
-                for(var i in row) {
-                    table += "<TD>" + row[i] + "</TD>";
-                }
-                table += "</TR>";
-            }, (err, num) => {
-                response = response.toString().replace(/!table!/g, table);
-                console.log("res: " + response);
-                WriteHtml(res, response);
-            })
+			if(err || num == 0) {Write404Error(res, "Error no data for State: " + req.params.selected_state);} else {
+				response = response.toString().replace(/ !state! /g,req.params.selected_state);
+				response = response.toString().replace(/!state!/g,state_full[req.params.selected_state]);
+				response = response.toString().replace(/!state_abbreviation!/g,req.params.selected_state);
+				response = response.toString().replace(/ !coal! /g,coal_counts);
+				response = response.toString().replace(/ !natural_gas! /g,natural_gas_counts);
+				response = response.toString().replace(/ !nuclear! /g,nuclear_counts);
+				response = response.toString().replace(/ !petroleum! /g,petroleum_counts);
+				response = response.toString().replace(/ !renewable! /g, renewable_counts);
+				response = response.toString().replace(/ !renewable! /g, renewable_counts);
+				response = response.toString().replace(/!next_state!/g, nextstate);
+				response = response.toString().replace(/!prev_state!/g, prevstate);
+				response = response.toString().replace(/!next_state_link!/g, "/state/" + nextstate);
+				response = response.toString().replace(/!prev_state_link!/g, "/state/" + prevstate);
+				var table = "";
+				db.each("Select [year], [coal], [natural_gas], [nuclear], [petroleum], [renewable], coal + natural_gas + nuclear + petroleum + renewable as [Total] from Consumption Where [state_abbreviation] = '" + req.params.selected_state + "' Order by [year]", (err, row) => {
+					table += "<TR>";
+					for(var i in row) {
+						table += "<TD>" + row[i] + "</TD>";
+					}
+					table += "</TR>";
+				}, (err, num) => {
+					response = response.toString().replace(/!table!/g, table);
+					WriteHtml(res, response);
+				})
+			}
         });
     }).catch((err) => {
-        console.log(err);
         Write404Error(res);
     });
 });
@@ -279,68 +255,64 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
 				prevenergy = ordered_energy[parseInt(energy_order[req.params.selected_energy_type])-1];
 			}
 		}
-        console.log(req.params.selected_energy_type);
         db.all("Select state_abbreviation, year, [" + req.params.selected_energy_type + "] as amount from Consumption order by state_abbreviation, year", (err,row) => {
-        	if(err) {console.log("SQL error");}
-            console.log(row);
-            for(var i=0; i<row.length; i++) {
-                let state_abbreviation = row[i].state_abbreviation;
-                state_counts[state_abbreviation] = {};
-            }
-            for(var i=0; i<row.length; i++)
-            {
-                let year = row[i].year;
-                let state_abbreviation = row[i].state_abbreviation;
-                let amount = row[i].amount;
-                state_counts[state_abbreviation][year] = amount;
-            }
-            //console.log(state_counts);
-            //console.log(year_counts);
-            console.log(state_counts);
-            for(let i in state_counts) {
-                state_counts[i] = Object.values(state_counts[i]);
-            }
-            //console.log(Object.values(year_counts));
-            //console.log(state_counts);
-            response = response.toString().replace(/ !type! /g,req.params.selected_energy_type);
-			response = response.toString().replace(/!type_nice!/g,name_nice[req.params.selected_energy_type]);
-            response = response.toString().replace(/!counts!/g,JSON.stringify(state_counts));
-			response = response.toString().replace(/!nextenergy!/g, nextenergy);
-			response = response.toString().replace(/!prevenergy!/g, prevenergy);
-			response = response.toString().replace(/!nextenergy_nice!/g, name_nice[nextenergy]);
-			response = response.toString().replace(/!prevenergy_nice!/g, name_nice[prevenergy]);
-            var table = "";
-            db.all("SELECT year, state_abbreviation, ["+req.params.selected_energy_type+"] as amount from Consumption order by year, state_abbreviation", (err,row) => {
-                //console.log(row);
-				var year_counts = {};
+        	if(err) {Write404Error(res, "Error: No data for energy type: " + req.params.selected_energy_type);}
+			else {
 				for(var i=0; i<row.length; i++) {
-					let year = row[i].year;
-					year_counts[year] = {};
+					let state_abbreviation = row[i].state_abbreviation;
+					state_counts[state_abbreviation] = {};
 				}
-				//console.log(year_counts);
-				for(var i=0; i<row.length; i++) {
+				for(var i=0; i<row.length; i++)
+				{
 					let year = row[i].year;
 					let state_abbreviation = row[i].state_abbreviation;
 					let amount = row[i].amount;
-					year_counts[year][state_abbreviation] = amount;
+					state_counts[state_abbreviation][year] = amount;
 				}
-				console.log(year_counts);
-                for(var i in year_counts) {
-                    table += "<TR>";
-					table += "<TD>" + i + "</TD>";
-					let state_counts = year_counts[i];
-					let total = 0;
-                    for(var j in state_counts) {
-                        table += "<TD> " + state_counts[j] + " </TD>";
-						total += state_counts[j];
-                    }
-					table += "<TD>" + total + "</TD>";
-                    table += "</TD>";
-                }
-				response = response.toString().replace(/!table!/g, table);
-				console.log(response);
-				WriteHtml(res, response);
-            });
+				for(let i in state_counts) {
+					state_counts[i] = Object.values(state_counts[i]);
+				}
+				response = response.toString().replace(/ !type! /g,req.params.selected_energy_type);
+				response = response.toString().replace(/!type_nice!/g,name_nice[req.params.selected_energy_type]);
+				response = response.toString().replace(/!counts!/g,JSON.stringify(state_counts));
+				response = response.toString().replace(/!nextenergy!/g, nextenergy);
+				response = response.toString().replace(/!prevenergy!/g, prevenergy);
+				response = response.toString().replace(/!nextenergy_nice!/g, name_nice[nextenergy]);
+				response = response.toString().replace(/!prevenergy_nice!/g, name_nice[prevenergy]);
+				var table = "";
+				db.all("SELECT year, state_abbreviation, ["+req.params.selected_energy_type+"] as amount from Consumption order by year, state_abbreviation", (err,row) => {
+					if(err) {
+						Write404Error(res, "Error: No data for energy type: " + req.params.selected_energy_type);
+					}
+					else {
+						var year_counts = {};
+						for(var i=0; i<row.length; i++) {
+							let year = row[i].year;
+							year_counts[year] = {};
+						}
+						for(var i=0; i<row.length; i++) {
+							let year = row[i].year;
+							let state_abbreviation = row[i].state_abbreviation;
+							let amount = row[i].amount;
+							year_counts[year][state_abbreviation] = amount;
+						}
+						for(var i in year_counts) {
+							table += "<TR>";
+							table += "<TD>" + i + "</TD>";
+							let state_counts = year_counts[i];
+							let total = 0;
+							for(var j in state_counts) {
+								table += "<TD> " + state_counts[j] + " </TD>";
+								total += state_counts[j];
+							}
+							table += "<TD>" + total + "</TD>";
+							table += "</TD>";
+						}
+						response = response.toString().replace(/!table!/g, table);
+						WriteHtml(res, response);
+					}
+				});
+			}
         });
     }).catch((err) => {
         Write404Error(res);
@@ -351,20 +323,19 @@ function ReadFile(filename) {
     return new Promise((resolve, reject) => {
         fs.readFile(filename, (err, data) => {
             if (err) {
-            	//console.log("Here");
                 reject(err);
             }
             else {
-            	//console.log("There");
                 resolve(data.toString());
             }
         });
     });
 }
 
-function Write404Error(res) {
+function Write404Error(res, error_text) {
     res.writeHead(404, {'Content-Type': 'text/plain'});
-    res.write('Error: file not found');
+	if(error_text) {res.write(error_text);}
+    else {res.write(res);}
     res.end();
 }
 
@@ -376,4 +347,3 @@ function WriteHtml(res, html) {
 
 
 var server = app.listen(port);
-//TestSql();
